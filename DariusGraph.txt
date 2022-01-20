@@ -1,0 +1,101 @@
+
+#include <iostream>
+#include <fstream>
+#include <list>
+
+using namespace std;
+
+struct Cvor
+{
+	int id;
+	list <int> susedni;
+	int dubina = -1;												// sve dubine stavimo na -1, tako cemo znati koji cvorovi nisu poseceni
+};
+
+void DFS_radni(Cvor* cvorovi, int vTren, int vDub, int *maxDub)		// rekurzivni DFS_radni(niz cvorova, id cvora, njegova dubina, maksimalna dubina)
+{
+	cvorovi[vTren].dubina = vDub;									// dodelimo datom cvoru njegovu dubinu 
+
+	if (*maxDub < cvorovi[vTren].dubina)							// ako je veca od maksimalne, dodelimo je maksimalnoj dubini
+		*maxDub = cvorovi[vTren].dubina;
+
+	list<int>::iterator it;											// medju susednim cvorovima trenutnog cvora trazimo one koji nisu poseceni
+	for (it = cvorovi[vTren].susedni.begin(); it != cvorovi[vTren].susedni.end(); ++it)
+		if (cvorovi[*it].dubina < 0)								// kada nadjemo takvog
+			DFS_radni(cvorovi, cvorovi[*it].id, vDub + 1, maxDub);	// pozivamo DFS_radni(niz cvorova, id tog cvora, dubinu povecavano za 1, maksimalna dubina)
+}
+
+int DFS(Cvor* cvorovi, int vPoc)
+{
+	int vDub = 0;													// dubina pocetnog cvora je nula
+	int maxDub = 0;
+
+	DFS_radni(cvorovi, vPoc, vDub, &maxDub);						// pozivamo DFS_radni(niz cvorova, pocetni cvor, njegova dubina, 
+																	// maksimalna dubina - po referenci da bi mogli da je menjamo u svim narednim pozivima)
+	return maxDub;													// vraca maksimalnu dubinu koja ce nam trebati prilikom ispisa
+}
+
+int main()
+{
+	int V, E;
+	int v1, v2;
+
+	ifstream thefile;												// unos kao i prosli put
+		
+	thefile.open("thefile.txt");
+	if (!thefile.is_open())
+	{
+		cout << "Could not open file: " << "thefile" << endl;
+		return 1;
+	}
+
+	thefile >> V >> E;
+
+	Cvor* cvorovi;													
+	cvorovi = new Cvor[V];											// niz cvorova
+
+	for (int i = 0; i < V; i++)
+	{
+		cvorovi[i].id = i;
+	}
+
+	for (int i = 0; i < E; i++)										// ovo sad radi :)
+	{
+		thefile >> v1 >> v2;
+		cvorovi[v1 - 1].susedni.push_back(v2 - 1);
+		cvorovi[v2 - 1].susedni.push_back(v1 - 1);
+	}
+	thefile.close();
+
+	int dubina;
+
+	dubina = DFS(cvorovi, 0);										// poziv DFS-a(niz cvorova, pocetni cvor), koji radi sve ono sto tamo gore pise
+
+	ofstream izlaz;
+	
+	izlaz.open("izlaz.txt");
+	if (!izlaz.is_open())
+	{
+		cout << "Could not open file: " << "izlaz" << endl;
+		return 1;
+	}
+										
+	for (int i = 0; i < dubina; i++)								// izlaz - za svaku dubinu izlistani cvorovi koji se u njoj nalaze
+	{
+		izlaz << "Grane u " << i + 1 << ". " << "sloju:";
+		for (int j = 0; j < V; j++)
+		{
+			if (cvorovi[j].dubina == i + 1)
+			{
+				izlaz << " " << cvorovi[j].id + 1;
+			}
+		}
+		izlaz << endl;
+	}
+
+	izlaz.close();
+
+	delete[] cvorovi;
+
+	return 0;
+}																	// okruglo :)
